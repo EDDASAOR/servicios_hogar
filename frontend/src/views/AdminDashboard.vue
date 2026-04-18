@@ -272,10 +272,22 @@ const updateStatus = async (id: string, newStatus: string) => {
   statusLoading.value = id;
   try {
     const estado = newStatus === 'pending' ? 'pendiente' :
-                   newStatus === 'confirmed' ? 'en proceso' :
-                   newStatus === 'completed' ? 'finalizado' : 'pendiente'; // No cancelado in enum right now, fallback to pendiente or extend logic later
+                   newStatus === 'confirmed' ? 'confirmado' :
+                   newStatus === 'completed' ? 'finalizado' : 
+                   newStatus === 'cancelled' ? 'cancelado' : 'pendiente';
     
-    await api.patch(`/appointments/${id}/status`, { estado });
+    let motivo = '';
+    if (estado === 'cancelado') {
+      const resp = prompt('Por favor, ingresa el motivo de la cancelación. Este motivo será enviado al cliente por correo:');
+      if (resp === null) {
+        // User clicked Cancel on prompt, revert status change
+        fetchAppointments();
+        return;
+      }
+      motivo = resp || 'Cancelado por el administrador sin motivo especificado';
+    }
+    
+    await api.patch(`/appointments/${id}/status`, { estado, motivo: motivo || undefined });
   } catch (e) {
     alert('Error al actualizar el estado');
     // revert
@@ -338,7 +350,7 @@ const getWhatsAppLink = (app: any) => {
   border-bottom: 1px solid #e2e8f0;
   position: fixed;
   top: 0; left: 0; right: 0;
-  z-index: 40;
+  z-index: 60;
 }
 .admin-header__logo { display: flex; align-items: center; gap: 8px; }
 .admin-menu-btn { background: transparent; border: none; color: #475569; padding: 4px; border-radius: 6px; cursor: pointer; }

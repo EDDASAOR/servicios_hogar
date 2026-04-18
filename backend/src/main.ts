@@ -11,6 +11,10 @@ async function bootstrap() {
       process.env.FRONTEND_URL || 'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:4173',
+      // Botpress Cloud
+      'https://cdn.botpress.cloud',
+      'https://mediafiles.botpress.cloud',
+      /\.botpress\.cloud$/,
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

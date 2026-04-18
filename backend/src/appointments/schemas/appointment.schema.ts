@@ -4,9 +4,11 @@ import { Document, Types } from 'mongoose';
 export type AppointmentDocument = Appointment & Document;
 
 export enum AppointmentStatus {
-  PENDIENTE = 'pendiente',
-  EN_PROCESO = 'en proceso',
-  FINALIZADO = 'finalizado',
+  PENDIENTE   = 'pendiente',
+  CONFIRMADO  = 'confirmado',
+  EN_PROCESO  = 'en proceso',
+  FINALIZADO  = 'finalizado',
+  CANCELADO   = 'cancelado',
 }
 
 export enum PriorityLevel {
@@ -37,6 +39,10 @@ export class Appointment {
   // Fecha solicitada
   @Prop({ required: true })
   fechaProgramada: Date;
+
+  // Razón de cancelación (la llena el admin al cancelar)
+  @Prop({ required: false })
+  motivoCancelacion: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

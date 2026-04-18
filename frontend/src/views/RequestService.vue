@@ -89,19 +89,34 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Fecha preferida *</label>
-                <input v-model="form.date" class="form-input" type="date" :min="minDate" required />
+                <input
+                  v-model="form.date"
+                  class="form-input"
+                  type="date"
+                  :min="minDate"
+                  :disabled="form.priority === 'urgent'"
+                  :title="form.priority === 'urgent' ? 'Los servicios urgentes son siempre para hoy' : ''"
+                  required
+                />
+                <span v-if="form.priority === 'urgent'" class="rq-field-locked">🔒 Bloqueado — servicio urgente</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Horario preferido *</label>
-                <select v-model="form.time" class="form-input form-select" required>
+                <select
+                  v-model="form.time"
+                  class="form-input form-select"
+                  :disabled="form.priority === 'urgent'"
+                  required
+                >
                   <option value="">Selecciona horario</option>
                   <option value="08:00">8:00 AM - 10:00 AM</option>
                   <option value="10:00">10:00 AM - 12:00 PM</option>
                   <option value="12:00">12:00 PM - 2:00 PM</option>
                   <option value="14:00">2:00 PM - 4:00 PM</option>
                   <option value="16:00">4:00 PM - 6:00 PM</option>
-                  <option value="urgent">🚨 Lo antes posible</option>
+                  <option v-if="form.date === minDate" value="urgent">🚨 Lo antes posible</option>
                 </select>
+                <span v-if="form.priority === 'urgent'" class="rq-field-locked">🔒 Bloqueado — se asignará el primer slot disponible</span>
               </div>
             </div>
 
@@ -221,24 +236,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import api from '../api/axios';
 
 const router = useRouter();
+const route  = useRoute();
 const authStore  = useAuthStore();
 const currentStep = ref(0);
 const loading    = ref(false);
 const error      = ref('');
 const submitted  = ref(false);
 
+// ── Leer query param al montar
 onMounted(() => {
-  if (!authStore.isAuthenticated) {
-    alert("Para solicitar un servicio, necesitas iniciar sesión o crear una cuenta.");
-    router.push('/login');
+  // El router guard ya protege esta ruta — no es necesario verificar isAuthenticated aquí.
+  // Pre-seleccionar servicio si viene desde una tarjeta del Home
+  const servicioParam = route.query.servicio as string;
+  if (servicioParam && ['plomeria', 'electricidad', 'aire'].includes(servicioParam)) {
+    form.serviceType = servicioParam;
   }
 });
+
+// ── Auto-completar fecha/hora en reservas urgentes
+const getNextSlot = (): string => {
+  const now = new Date();
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+  const slots = [8, 10, 12, 14, 16];
+  const slotValues = ['08:00', '10:00', '12:00', '14:00', '16:00'];
+  const idx = slots.findIndex(h => h > currentHour);
+  return idx !== -1 ? slotValues[idx] : 'urgent'; // 'urgent' = Lo antes posible
+};
 
 const steps = ['Servicio', 'Datos y Fecha', 'Confirmación'];
 
@@ -251,6 +280,24 @@ const form = reactive({
   address: '',
   date: '',
   time: '',
+});
+
+// Watch urgencia: cuando cambia a urgente → bloquea fecha=hoy, hora=Lo antes posible
+watch(() => form.priority, (val) => {
+  if (val === 'urgent') {
+    form.date = minDate;  // siempre hoy
+    form.time = 'urgent'; // Lo antes posible (bloqueado)
+  } else {
+    form.date = '';
+    form.time = '';
+  }
+});
+
+// Watch fecha: si el usuario cambia a un día != hoy y tenía 'Lo antes posible', limpiar hora
+watch(() => form.date, (newDate) => {
+  if (newDate !== minDate && form.time === 'urgent') {
+    form.time = '';
+  }
 });
 
 const services = [
@@ -310,6 +357,22 @@ const submit = async () => {
 .rq-header__desc  { font-size: 1.0625rem; color: rgba(255,255,255,0.65); max-width: 480px; margin: 0 auto; }
 
 .rq-body { padding: 48px 16px 80px; }
+
+/* Campos bloqueados en modo urgente */
+.form-input:disabled,
+.form-select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 1;
+}
+.rq-field-locked {
+  display: block;
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 4px;
+  font-weight: 600;
+}
 
 /* Steps */
 .rq-steps {

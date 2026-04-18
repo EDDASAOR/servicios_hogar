@@ -29,7 +29,11 @@ export class AppointmentsController {
 
   @Roles('admin')
   @Patch(':id/status')
-  async updateStatus(@Param('id') id: string, @Body('estado') estado: string) {
-    return this.appointmentsService.updateStatus(id, estado);
+  async updateStatus(
+    @Param('id') id: string,
+    @Body('estado') estado: string,
+    @Body('motivo') motivo?: string,
+  ) {
+    return this.appointmentsService.updateStatus(id, estado, motivo);
   }
 }

@@ -108,7 +108,7 @@
         </div>
 
         <div class="services-grid">
-          <div v-for="svc in services" :key="svc.title" class="svc-card" @click="$router.push('/solicitar')">
+          <div v-for="svc in services" :key="svc.title" class="svc-card" @click="$router.push({ path: '/solicitar', query: { servicio: svc.id } })">
             <div class="svc-card__img-wrap">
               <img :src="svc.image" :alt="svc.title" class="svc-card__img" />
               <div class="svc-card__overlay"></div>
@@ -231,9 +231,9 @@ const features = [
 ];
 
 const services = [
-  { title: 'Plomería', badge: 'Más popular', color: '#0ea5e9', light: 'rgba(14,165,233,0.1)', image: '/servicio_plomeria.png', price: '$35', desc: 'Reparación de fugas, destapes, tuberías y calentadores de agua.', icon: { vb:'0 0 24 24', p:'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' } },
-  { title: 'Electricidad', badge: 'Urgencias', color: '#f59e0b', light: 'rgba(245,158,11,0.1)', image: '/servicio_electricidad.png', price: '$45', desc: 'Cableado, tableros eléctricos, iluminación LED y cortocircuitos.', icon: { vb:'0 0 24 24', p:'M13 10V3L4 14h7v7l9-11h-7z' } },
-  { title: 'Aire Acondicionado', badge: 'Garantía 1 año', color: '#10b981', light: 'rgba(16,185,129,0.1)', image: '/servicio_aire.png', price: '$55', desc: 'Mantenimiento preventivo, recargas de gas y reparación de equipos split.', icon: { vb:'0 0 24 24', p:'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z' } },
+  { id: 'plomeria',     title: 'Plomería', badge: 'Más popular', color: '#0ea5e9', light: 'rgba(14,165,233,0.1)', image: '/servicio_plomeria.png', price: '$35', desc: 'Reparación de fugas, destapes, tuberías y calentadores de agua.', icon: { vb:'0 0 24 24', p:'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' } },
+  { id: 'electricidad', title: 'Electricidad', badge: 'Urgencias', color: '#f59e0b', light: 'rgba(245,158,11,0.1)', image: '/servicio_electricidad.png', price: '$45', desc: 'Cableado, tableros eléctricos, iluminación LED y cortocircuitos.', icon: { vb:'0 0 24 24', p:'M13 10V3L4 14h7v7l9-11h-7z' } },
+  { id: 'aire',         title: 'Aire Acondicionado', badge: 'Garantía 1 año', color: '#10b981', light: 'rgba(16,185,129,0.1)', image: '/servicio_aire.png', price: '$55', desc: 'Mantenimiento preventivo, recargas de gas y reparación de equipos split.', icon: { vb:'0 0 24 24', p:'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z' } },
 ];
 
 const process = [
