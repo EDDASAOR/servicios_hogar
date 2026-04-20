@@ -32,4 +32,21 @@ export class UsersService {
   async findByEmail(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).exec();
   }
+
+  async saveOtp(email: string, code: string): Promise<UserDocument | null> {
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 10); // Expira en 10 min
+    return this.userModel.findOneAndUpdate(
+      { email },
+      { otpCode: code, otpExpires: expires },
+      { new: true }
+    ).exec();
+  }
+
+  async clearOtp(email: string): Promise<void> {
+    await this.userModel.updateOne(
+      { email },
+      { $unset: { otpCode: 1, otpExpires: 1 } }
+    ).exec();
+  }
 }

@@ -25,7 +25,9 @@ declare global {
     interface Window {
         botpress?: {
             /** Envía un evento/payload desde la web hacia el flujo del bot */
-            sendEvent: (event: { type: string; data?: Record<string, unknown> }) => void;
+            sendEvent: (event: { type: string; payload?: Record<string, unknown> }) => void;
+            /** Envía un mensaje como si lo hubiera escrito el usuario (v3) */
+            sendMessage: (message: { type: string; text?: string; payload?: Record<string, unknown> }) => void;
             /** Suscribe un handler a eventos del webchat o eventos personalizados del bot */
             on: (
                 eventType: string,
@@ -177,9 +179,7 @@ export function useBotpressInit() {
 
     /**
      * Envía el contexto del usuario al bot cuando abre el chat.
-     * NOTA: Ya NO incluye el access_token — el bot maneja su propia sesión.
-     * Solo se envían datos informativos (nombre, email) como ayuda opcional,
-     * pero el bot siempre pedirá login si necesita rutas autenticadas.
+     * Compartiendo la misma sesión web a través de variables de contexto.
      */
     function sendUserPayloadToBot() {
         if (!window.botpress) return;
@@ -187,18 +187,30 @@ export function useBotpressInit() {
         const data = authStore.isAuthenticated && authStore.user
             ? {
                 isAuthenticated: true,
-                nombre:   authStore.user.nombre,
-                email:    authStore.user.email,
-                telefono: authStore.user.telefono ?? '',
+                access_token: authStore.token,
             }
             : {
                 isAuthenticated: false,
             };
 
-        window.botpress.sendEvent({
-            type: 'USER_CONTEXT',
-            data,
-        });
+        // Limpieza de memoria temporal
+        var payload = {
+            access_token: data.isAuthenticated ? data.access_token : "",
+            client_nombre: data.isAuthenticated && authStore.user ? authStore.user.nombre : "",
+            client_email: data.isAuthenticated && authStore.user ? authStore.user.email : "",
+            client_telefono: data.isAuthenticated && authStore.user ? (authStore.user.telefono || "") : ""
+        };
+
+        // Enchufamos TODAS las variables puras en memoria sin lanzar Eventos ni Textos visibles
+        if (window.botpress.updateUser) {
+            window.botpress.updateUser(payload);
+        } else if (window.botpress.sendEvent) {
+             // Fallback si la versión de Webchat lo encapsula bajo eventos del sistema
+            window.botpress.sendEvent({
+                type: 'updateUser',
+                payload: payload
+            });
+        }
     }
 
     /**
@@ -210,9 +222,29 @@ export function useBotpressInit() {
         if (!window.botpress) return () => {};
 
         const unsubscribe = window.botpress.on('customEvent', (event) => {
+            // Acción 1: Redirecciones Web
             if (event['type'] === 'REDIRECT_TO') {
                 const path = event['path'] as string | undefined;
                 if (path) window.location.href = path;
+            }
+            
+            // Acción 2: Botpress nos pide los datos de sesión activamente porque el usuario dio clic en "SÍ"
+            if (event['type'] === 'GET_SESSION') {
+                const data = authStore.isAuthenticated && authStore.user ? { isAuthenticated: true } : { isAuthenticated: false };
+                
+                var payload = {
+                    access_token: data.isAuthenticated ? authStore.token : "",
+                    client_nombre: data.isAuthenticated && authStore.user ? authStore.user.nombre : "",
+                    client_email: data.isAuthenticated && authStore.user ? authStore.user.email : "",
+                    client_telefono: data.isAuthenticated && authStore.user ? (authStore.user.telefono || "") : ""
+                };
+
+                // Le devolvemos a Botpress la información inyectando directamente sus variables maestras
+                if (window.botpress!.updateUser) {
+                    window.botpress!.updateUser(payload);
+                } else if (window.botpress!.sendEvent) {
+                    window.botpress!.sendEvent({ type: 'trigger', payload: payload });
+                }
             }
         });
 
@@ -239,8 +271,8 @@ export function useBotpressInit() {
             // Escuchar acciones del bot → página
             cleanupActions = listenToBotActions();
 
-            // Enviar USER_CONTEXT cada vez que el usuario abre el chat
-            cleanupOpened = window.botpress!.on('webchat:opened', () => {
+            // Enviar USER_CONTEXT cuando el chat está 100% listo para recibir eventos
+            cleanupOpened = window.botpress!.on('webchat:ready', () => {
                 sendUserPayloadToBot();
             });
         };

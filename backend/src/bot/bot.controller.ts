@@ -117,6 +117,78 @@ export class BotController {
     return this.authService.login(user);
   }
 
+  /**
+   * POST /bot/request-otp
+   * Genera código de 4 dígitos y notifica a Make.
+   */
+  @HttpCode(HttpStatus.OK)
+  @Post('request-otp')
+  async requestOtp(@Body() body: { email: string }) {
+    if (!body.email) {
+      throw new BadRequestException('Email es obligatorio.');
+    }
+    const safeEmail = body.email.toLowerCase().trim();
+    console.log('[DEBUG /request-otp] Email recibido:', safeEmail);
+    const user = await this.usersService.findByEmail(safeEmail);
+    console.log('[DEBUG /request-otp] Usuario encontrado:', user ? 'SÍ' : 'NO');
+    if (!user) {
+      throw new BadRequestException('No encontramos ninguna cuenta con este correo.');
+    }
+
+    // Generar OTP de 4 dígitos
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    await this.usersService.saveOtp(safeEmail, code);
+
+    // Enviar a Make
+    const makeUrl = process.env.MAKE_WEBHOOK_URL;
+    if (makeUrl) {
+      const payload = {
+        tipo: 'otp',
+        clienteEmail: user.email,
+        clienteNombre: user.nombre,
+        motivo: code // Hacky way to pass the code in the same webhook schema
+      };
+      fetch(makeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(err => console.error('Error al invocar Make-OTP:', err));
+    }
+
+    return { message: 'OTP enviado con éxito.' };
+  }
+
+  /**
+   * POST /bot/verify-otp
+   */
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-otp')
+  async verifyOtp(@Body() body: { email: string; code: string }) {
+    if (!body.email || !body.code) {
+      throw new BadRequestException('Email y código son obligatorios.');
+    }
+
+    const safeEmail = body.email.toLowerCase().trim();
+    const user = await this.usersService.findByEmail(safeEmail);
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado.');
+    }
+
+    if (!user.otpCode || user.otpCode !== body.code) {
+      throw new UnauthorizedException('El código introducido es incorrecto.');
+    }
+
+    if (user.otpExpires && new Date() > user.otpExpires) {
+      throw new UnauthorizedException('El código ha expirado. Solicita uno nuevo.');
+    }
+
+    // Código correcto
+    await this.usersService.clearOtp(body.email);
+
+    // Retorna JWT
+    return this.authService.login(user.toObject());
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // SERVICIOS / CATÁLOGO
   // ─────────────────────────────────────────────────────────────────────────

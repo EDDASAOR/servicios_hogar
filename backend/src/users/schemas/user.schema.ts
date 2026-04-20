@@ -24,6 +24,12 @@ export class User {
 
   @Prop()
   telefono: string;
+
+  @Prop()
+  otpCode?: string;
+
+  @Prop()
+  otpExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
