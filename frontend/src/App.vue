@@ -163,6 +163,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useRouter, useRoute } from 'vue-router';
+import { useBotpressInit } from './composables/botpress-init'; // ← AGREGAR
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -174,17 +175,20 @@ const scrolled = ref(false);
 const isAuthPage = computed(() => ['/login', '/admin'].includes(route.path));
 
 const onScroll = () => { scrolled.value = window.scrollY > 50; };
+
 onMounted(async () => {
-  // Verificar sesión guardada. Hasta que termine, App.vue muestra un spinner
-  // en lugar del contenido, evitando condiciones de carrera.
   await authStore.initAuth();
-  // Después de auth listo, si estamos en una ruta protegida y no hay sesión,
-  // el guard del router re-evalúa y redirige correctamente.
+
+  // ← AGREGAR ESTAS DOS LÍNEAS
+  const { init } = useBotpressInit();
+  init();
+
   if (route.meta.requiresAuth && !authStore.isAuthenticated) {
     router.push({ name: 'Login', query: { redirect: route.fullPath } });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
 });
+
 onUnmounted(() => window.removeEventListener('scroll', onScroll));
 
 const closeMobile = () => { mobileOpen.value = false; };
