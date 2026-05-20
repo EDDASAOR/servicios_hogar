@@ -258,15 +258,6 @@ onMounted(() => {
   }
 });
 
-// ── Auto-completar fecha/hora en reservas urgentes
-const getNextSlot = (): string => {
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-  const slots = [8, 10, 12, 14, 16];
-  const slotValues = ['08:00', '10:00', '12:00', '14:00', '16:00'];
-  const idx = slots.findIndex(h => h > currentHour);
-  return idx !== -1 ? slotValues[idx] : 'urgent'; // 'urgent' = Lo antes posible
-};
 
 const steps = ['Servicio', 'Datos y Fecha', 'Confirmación'];
 
