@@ -5,17 +5,30 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS configurado para frontend
+  // Orígenes permitidos: incluye producción en Vercel + localhost para desarrollo
+  const allowedOrigins: (string | RegExp)[] = [
+    'https://servicios-hogar.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:4173',
+    // Botpress Cloud
+    'https://cdn.botpress.cloud',
+    'https://mediafiles.botpress.cloud',
+    /\.botpress\.cloud$/,
+  ];
+
+  // Si hay FRONTEND_URL en las variables de entorno, agregarla también
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach((url) => {
+      const trimmed = url.trim();
+      if (trimmed && !allowedOrigins.includes(trimmed)) {
+        allowedOrigins.push(trimmed);
+      }
+    });
+  }
+
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:4173',
-      // Botpress Cloud
-      'https://cdn.botpress.cloud',
-      'https://mediafiles.botpress.cloud',
-      /\.botpress\.cloud$/,
-    ],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -30,9 +43,10 @@ async function bootstrap() {
     }),
   );
 
+  // Railway requiere escuchar en 0.0.0.0
   const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`🚀 HogarPro API corriendo en: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 HogarPro API corriendo en puerto: ${port}`);
   console.log(`🗄️  Base de datos: MongoDB Atlas`);
 }
 bootstrap();
