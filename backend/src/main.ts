@@ -28,9 +28,9 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: true, // Permitir TODO temporalmente para debuggear
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
 
